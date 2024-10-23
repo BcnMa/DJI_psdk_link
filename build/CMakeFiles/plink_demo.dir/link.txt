@@ -1,0 +1,1 @@
+/usr/bin/c++ -g -g -O0 CMakeFiles/plink_demo.dir/main.cpp.o CMakeFiles/plink_demo.dir/link/p_link_cmp.cpp.o CMakeFiles/plink_demo.dir/link/p_link.cpp.o CMakeFiles/plink_demo.dir/hal/hal_uart.c.o -o plink_demo 
