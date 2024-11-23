@@ -1,16 +1,4 @@
-#include <iostream>
-#include <thread>
-
-#include "link/p_link_cmp.h"
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-#include "hal/hal_uart.h"
-#ifdef __cplusplus
-}
-#endif
+# include "psdk_node.h"
 
 T_DjiUartHandle p_link_uartHandle;
 
@@ -39,13 +27,79 @@ int uart_recv(uint8_t *data, uint16_t length)
     return realLen;
 }
 
-int main(int argc, char **argv)
+
+void pub_pose(p_link_cmp link_cmp, T_p_link_uav_data uav_data)
 {
+    if (0 == link_cmp.uav_data_get(&uav_data))
+    {
+        geometry_msgs::Pose pose_data;
+
+        pose_data.position.x = uav_data.x;
+        pose_data.position.y = uav_data.y;
+        pose_data.position.z = uav_data.z;
+
+        pose_data.orientation.x = uav_data.q0;
+        pose_data.orientation.y = uav_data.q1;
+        pose_data.orientation.z = uav_data.q2;
+        pose_data.orientation.w = uav_data.q3;
+
+        // uav_pose_pub.publish(pose_data);
+        
+        std::cout <<"uav_data1: "<<uav_data.q0<< ", "<<uav_data.q1<< ", " <<uav_data.q2<<", " <<uav_data.q3<< std::endl;
+        std::cout <<"uav_data2: "<<uav_data.x<< ", "<<uav_data.y<<", "<<uav_data.z<<std::endl;
+    }
+}
+
+void uav_ctrl_callback(const geometry_msgs::Twist::ConstPtr &msg)
+{
+    std::cout << "uav_ctrl_callback" << std::endl;
+    T_p_link_rc p_link_rc;
+    p_link_rc.x = (msg->linear.x * 10);
+    p_link_rc.y = (msg->linear.y * 10);
+    p_link_rc.z = (msg->linear.z * 10);
+    p_link_rc.yaw = (msg->angular.z * 10);
+
+    // link_cmp.rc(&p_link_rc);
+}
+
+void uav_follow_callback(const sensor_msgs::NavSatFix::ConstPtr &msg)
+{
+    std::cout << "uav_follow_callback" << std::endl;    
+    T_p_link_gps_track gps_track;
+    gps_track.lon = msg->longitude * 10000000;
+    gps_track.lat = msg->latitude * 10000000;
+    gps_track.alt = msg->altitude * 1000;
+    gps_track.speed = 3.0;
+    // link_cmp.uav_follow_ctrl(&gps_track);    
+}
+
+int main(int argc, char *argv[])
+{
+    ros::init(argc, argv, "psdk_node");
+    ros::NodeHandle nh("~");
+    int port_num = 0;
     p_link_cmp link_cmp;
+    E_DjiHalUartNum uart_port;
     T_p_link_uav_data uav_data = {0};
     T_p_link_camer_track camer_track_data = {0};
 
-    if (0 != HalUart_Init(DJI_HAL_UART_NUM_2, 57600, &p_link_uartHandle))
+    ros::param::get("port_num", port_num);
+
+    ros::Publisher uav_pose_pub = nh.advertise<geometry_msgs::Pose>("uav_pose", 100000);
+    ros::Publisher uav_imu_pub = nh.advertise<sensor_msgs::Imu>("uav_imu", 100000);
+    ros::Subscriber uav_ctrl_sub = nh.subscribe("uav_ctrl", 10, uav_ctrl_callback);
+    ros::Subscriber uav_follow_sub = nh.subscribe("uav_follow", 10, uav_follow_callback);
+    
+    if (port_num >= 0 && port_num < 3) { 
+        uart_port = static_cast<E_DjiHalUartNum>(DJI_HAL_UART_NUM_0 + port_num);
+    } else {
+        ROS_ERROR("Invalid port number: %d", port_num);
+        uart_port = DJI_HAL_UART_NUM_0; 
+    }
+    std::cout << "uart_port: " << uart_port << std::endl;
+
+    // 57600
+    if (0 != HalUart_Init(uart_port, 115200, &p_link_uartHandle))
     {
         std::cout << "uart open error" << std::endl;
     }
@@ -55,26 +109,6 @@ int main(int argc, char **argv)
     {
         link_cmp.run();
 
-#if 0
-        if (0 == link_cmp.uav_data_get(&uav_data))
-        {
-            //无人机数据有更新，打印无人机数据
-            //std::cout << uav_data.q0 << uav_data.q1 << uav_data.q2 << uav_data.q3 << std::endl;
-            //std::cout << uav_data.x << uav_data.y << uav_data.z << std::endl;
-            std::cout <<"uav_data1: "<<uav_data.q0<< ", "<<uav_data.q1<< ", " <<uav_data.q2<<", " <<uav_data.q3<< std::endl;
-            std::cout <<"uav_data2: "<<uav_data.x<< ", "<<uav_data.y<<", "<<uav_data.z<<std::endl;
-        }
-
-        //相机识别矩形坐标数据
-        if(0 == link_cmp.camer_track_data_get(&camer_track_data))
-        {
-            std::cout <<"camer_poin1: "<<camer_track_data.poin1.lat<< ", "<<camer_track_data.poin1.lon<< ", " <<camer_track_data.poin1.alt<<std::endl;
-            std::cout <<"camer_poin2: "<<camer_track_data.poin2.lat<< ", "<<camer_track_data.poin2.lon<< ", " <<camer_track_data.poin2.alt<<std::endl;
-            std::cout <<"camer_poin3: "<<camer_track_data.poin3.lat<< ", "<<camer_track_data.poin3.lon<< ", " <<camer_track_data.poin3.alt<<std::endl;
-        }
-#endif
-
-#if 1
         int cmd = 0;
         std::cout << "<1>起飞" << std::endl;
         std::cout << "<2>降落" << std::endl;
@@ -165,7 +199,6 @@ int main(int argc, char **argv)
         }
         break;
         }
-#endif
         usleep(10000);
     }
 

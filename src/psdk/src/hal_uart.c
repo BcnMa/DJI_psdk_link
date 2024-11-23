@@ -67,6 +67,7 @@ int HalUart_Init(E_DjiHalUartNum uartNum, uint32_t baudRate, T_DjiUartHandle *ua
         goto free_uart_handle;
     }
 
+
 #ifdef USE_CLION_DEBUG
     sprintf(systemCmd, "ls -l %s", uartName);
     fp = popen(systemCmd, "r");
@@ -86,7 +87,7 @@ int HalUart_Init(E_DjiHalUartNum uartNum, uint32_t baudRate, T_DjiUartHandle *ua
         goto close_fp;
     }
 #else
-    sprintf(systemCmd, "chmod 777 %s", uartName);
+    // sprintf(systemCmd, "chmod 777 %s", uartName);
     fp = popen(systemCmd, "r");
     if (fp == NULL) {
         return -1;

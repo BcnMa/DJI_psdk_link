@@ -49,13 +49,9 @@ extern "C" {
 /* Exported constants --------------------------------------------------------*/
 //User can config dev based on there environmental conditions
 #define LINUX_UART_DEV1    "/dev/ttyUSB0"
-//#define LINUX_UART_DEV1    "/dev/ttyUSB0"
-//#define LINUX_UART_DEV1    "/dev/ttyUSB0"
-#define LINUX_UART_DEV2    "/dev/ttyACM0"
-//#define LINUX_UART_DEV2    "/dev/ttyUSB0"
+#define LINUX_UART_DEV2    "/dev/ttyUSB1"
+#define LINUX_UART_DEV3    "/dev/ttyUSB2"
 
-#define LINUX_UART_DEV3    "/dev/ttyUSB0"
-//#define LINUX_UART_DEV3    "/dev/ttyUSB3"
 
 typedef enum {
     /**
@@ -67,7 +63,7 @@ typedef enum {
     * Baud rate support list on M350 RTK Payload Port: 115200, 230400, 460800, 921600.
     * Baud rate support list on M350 RTK Extension Port: 115200, 230400, 460800, 921600, 1000000.
     * */
-    DJI_HAL_UART_NUM_0,
+    DJI_HAL_UART_NUM_0=0,
     /**
     * Only support on M300/M350 RTK Extension Port by USB virtual serial port, such as /dev/ttyACM0.
     * Baud rate support list on M300 RTK Extension Port: 921600.
@@ -83,8 +79,6 @@ typedef struct {
 } T_DjiUartStatus;
 
 
-//#define LINUX_UART_DEV1    "/dev/ttyS0"
-//#define LINUX_UART_DEV2    "/dev/ttyS1"
 /* Exported types ------------------------------------------------------------*/
 
 /* Exported functions --------------------------------------------------------*/

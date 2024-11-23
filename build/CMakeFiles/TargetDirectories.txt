@@ -1,3 +1,0 @@
-/home/cxl/workspace/psdk_link_demo/build/CMakeFiles/plink_demo.dir
-/home/cxl/workspace/psdk_link_demo/build/CMakeFiles/edit_cache.dir
-/home/cxl/workspace/psdk_link_demo/build/CMakeFiles/rebuild_cache.dir

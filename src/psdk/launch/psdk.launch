@@ -1,0 +1,5 @@
+<launch>
+    <param name="ctrl_mode" value="1" />
+    <param name="uart_port" value="1" />
+    <node pkg="psdk" type="psdk_node" name="psdk_node" output="screen" respawn="true"/>
+</launch>
