@@ -31,7 +31,9 @@ T_DjiUartHandle p_link_uartHandle;
 
 class Psdk {
 private:
-    int port_num = 0;
+    ros::NodeHandle nh;
+    bool debug_mode;
+    int port_num;
     p_link_cmp link_cmp;
     E_DjiHalUartNum uart_port;
     T_p_link_uav_data uav_data = {0};
@@ -42,11 +44,15 @@ private:
     ros::Subscriber uav_follow_sub;
 
 public:
-    Psdk(ros::NodeHandle &nh) {
-        uav_pose_pub = nh.advertise<geometry_msgs::Pose>("uav_pose", 100000);
-        uav_imu_pub = nh.advertise<sensor_msgs::Imu>("uav_imu", 100000);
-        uav_ctrl_sub = nh.subscribe("uav_ctrl", 10, &Psdk::uav_ctrl_callback, this);
-        uav_follow_sub = nh.subscribe("uav_follow", 10, &Psdk::uav_follow_callback, this);
+    Psdk(ros::NodeHandle &main_nh) {
+        nh = main_nh;
+        uav_pose_pub = nh.advertise<sensor_msgs::NavSatFix>("/uav_pose", 100000);
+        uav_imu_pub = nh.advertise<sensor_msgs::Imu>("/uav_imu", 100000);
+        uav_ctrl_sub = nh.subscribe("/rc_ctrl", 10, &Psdk::uav_ctrl_callback, this);
+        uav_follow_sub = nh.subscribe("/pose_follow", 10, &Psdk::uav_follow_callback, this);
+    
+        nh.param<int>("port_num", port_num, 0);
+        nh.param<bool>("debug_mode", debug_mode, false);
     }
 
     static int uart_send(uint8_t *data, uint16_t length) {
@@ -71,8 +77,6 @@ public:
     }
 
     int uart_init() {
-        ros::param::get("port_num", port_num);
-
         if (port_num >= 0 && port_num < 3) { 
             uart_port = static_cast<E_DjiHalUartNum>(DJI_HAL_UART_NUM_0 + port_num);
         } else {
@@ -82,10 +86,17 @@ public:
         std::cout << "uart_port: " << uart_port << std::endl;
 
         // 57600
-        if (0 != HalUart_Init(uart_port, 115200, &p_link_uartHandle)) {
+        if (0 != HalUart_Init(uart_port, 57600, &p_link_uartHandle)) {
             std::cout << "uart open error" << std::endl;
         }
         link_cmp.p_link_cmp_init(uart_recv, uart_send);
+
+        if (debug_mode) {
+            std::cout << GREEN << "ros param:" << YELLOW << std::endl
+                        << "    port_num: " << port_num << std::endl
+                        << "    debug_mode: " << debug_mode << RESET 
+                        << std::endl;
+        }
         return 0;
     }
 
@@ -190,43 +201,37 @@ public:
     } 
 
     void pub_pose() {
-        geometry_msgs::Pose pose_data;
+        sensor_msgs::NavSatFix pose_data;
         if (0 == link_cmp.uav_data_get(&uav_data)) {
-            pose_data.position.x = uav_data.x;
-            pose_data.position.y = uav_data.y;
-            pose_data.position.z = uav_data.z;
+            pose_data.header.stamp = ros::Time::now();
+            pose_data.header.frame_id = "uav";
 
-            pose_data.orientation.x = uav_data.q0;
-            pose_data.orientation.y = uav_data.q1;
-            pose_data.orientation.z = uav_data.q2;
-            pose_data.orientation.w = uav_data.q3;
+            pose_data.longitude = uav_data.x / 10000000.0;
+            pose_data.latitude = uav_data.y / 10000000.0;
+            pose_data.altitude = uav_data.z / 1000.0;
 
             uav_pose_pub.publish(pose_data);
-            
-            std::cout <<"uav_data1: "<<uav_data.q0<< ", "<<uav_data.q1<< ", " <<uav_data.q2<<", " <<uav_data.q3<< std::endl;
-            std::cout <<"uav_data2: "<<uav_data.x<< ", "<<uav_data.y<<", "<<uav_data.z<<std::endl;
-        } else {
-            pose_data.position.x = 1;
-            pose_data.position.y = 2;
-            pose_data.position.z = 3;
-
-            pose_data.orientation.x = 4;
-            pose_data.orientation.y = 5;
-            pose_data.orientation.z = 6;
-            pose_data.orientation.w = 7;
-
-            uav_pose_pub.publish(pose_data);
-            // std::cout << "pub" << std::endl;
-        }
+            if (debug_mode) 
+                std::cout << CYAN << std::endl << "The Drone send state:" << RED << " Position " << YELLOW << std::endl
+                        << "    x: " << uav_data.x << ", " << std::endl
+                        << "    y: " << uav_data.y << ", " << std::endl
+                        << "    z: " << uav_data.z << ", " << std::endl
+                        << "    q0: " << uav_data.q0 << ", " << std::endl 
+                        << "    q1: " << uav_data.q1 << ", " << std::endl
+                        << "    q2: " << uav_data.q2 << ", " << std::endl 
+                        << "    q3: " << uav_data.q3 << ", " << RESET
+                        << std::endl;      
+        } 
     }
 
     void uav_ctrl_callback(const geometry_msgs::Twist::ConstPtr &msg) {
-        std::cout << GREEN << std::endl << "The Drone receives command:" << RED << " Speed" << YELLOW << std::endl
-                    << "    x-speed: " << msg->linear.x << ", " << std::endl 
-                    << "    y-speed: " << msg->linear.y << ", " << std::endl
-                    << "    z-speed: " << msg->linear.z << ", " << std::endl
-                    << "    yaw-speed: " << msg->angular.z << RESET
-                    << std::endl;
+        if (debug_mode)
+            std::cout << GREEN << std::endl << "The Drone receives command:" << RED << " Speed" << YELLOW << std::endl
+                        << "    x-speed: " << msg->linear.x << ", " << std::endl 
+                        << "    y-speed: " << msg->linear.y << ", " << std::endl
+                        << "    z-speed: " << msg->linear.z << ", " << std::endl
+                        << "    yaw-speed: " << msg->angular.z << RESET
+                        << std::endl;
         T_p_link_rc p_link_rc;
         p_link_rc.x = (msg->linear.x * 10);
         p_link_rc.y = (msg->linear.y * 10);
@@ -237,11 +242,12 @@ public:
     }
 
     void uav_follow_callback(const sensor_msgs::NavSatFix::ConstPtr &msg) {
-        std::cout << GREEN << std::endl << "The Drone receives command:" << RED << " Position " << YELLOW << std::endl
-                    << "    longitude: " << msg->longitude << ", " << std::endl
-                    << "    latitude: " << msg->latitude << ", " << std::endl
-                    << "    altitude: " << msg->altitude << ", " << RESET
-                    << std::endl;    
+        if (debug_mode)
+            std::cout << GREEN << std::endl << "The Drone receives command:" << RED << " Position " << YELLOW << std::endl
+                        << "    longitude: " << msg->longitude << ", " << std::endl
+                        << "    latitude: " << msg->latitude << ", " << std::endl
+                        << "    altitude: " << msg->altitude << ", " << RESET
+                        << std::endl;    
         T_p_link_gps_track gps_track;
         gps_track.lon = msg->longitude * 10000000;
         gps_track.lat = msg->latitude * 10000000;
