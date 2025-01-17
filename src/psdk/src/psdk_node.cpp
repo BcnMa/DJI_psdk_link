@@ -16,13 +16,13 @@ int main(int argc, char *argv[])
     ros::init(argc, argv, "psdk_node");
     ros::NodeHandle nh("~");
 
-    Psdk psdk(nh);
+    Psdk psdk;
     psdk.uart_init();
 
     // ctrl_mode = 0：run_only_pc，电脑键盘输入控制
     // ctrl_mode = 1：    run_ros，通过ros话题控制
     int ctrl_mode;
-    nh.param<int>("ctrl_mode", ctrl_mode, 1);
+    nh.param<int>("ctrl_mode", ctrl_mode, 0);
     if (ctrl_mode == 0) {
         psdk.run_only_pc();
     } else {

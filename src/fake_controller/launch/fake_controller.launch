@@ -1,0 +1,8 @@
+<launch>
+  <node pkg="fake_controller" name="fake_controller" type="fake_controller_node" output="screen" >
+  </node>
+  
+  <param name="use_sim_time" value="false" /> 
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find fake_controller)/launch/fake_controller.rviz" output="screen">
+  </node>
+</launch>

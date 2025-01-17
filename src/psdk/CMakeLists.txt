@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   geometry_msgs
+  psdk_msgs
 )
 
 include_directories(
@@ -18,7 +19,7 @@ include_directories(
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS roscpp rospy std_msgs  
+  CATKIN_DEPENDS roscpp rospy std_msgs 
 )
 
 

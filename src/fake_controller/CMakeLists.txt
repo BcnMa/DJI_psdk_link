@@ -10,6 +10,7 @@ find_package(catkin REQUIRED COMPONENTS
   nav_msgs
   std_msgs
   tf
+  psdk_msgs
 )
 
 catkin_package(
@@ -28,3 +29,6 @@ target_link_libraries(fake_rc_node ${catkin_LIBRARIES})
 
 add_executable(fake_pose_node src/fake_pose_pub.cpp)
 target_link_libraries(fake_pose_node ${catkin_LIBRARIES})
+
+add_executable(fake_controller_node src/fake_controller.cpp)
+target_link_libraries(fake_controller_node ${catkin_LIBRARIES})

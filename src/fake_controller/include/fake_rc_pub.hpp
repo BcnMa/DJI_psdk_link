@@ -14,9 +14,9 @@ private:
     ros::Timer timer_pub;
 
     int current_pub_num = 0;
-    int max_pub_num = 100;
+    int max_pub_num = 500;
 
-    double normal_speed = 5.0;
+    double normal_speed = 1.0;
     double x = 0.0, y = 0.0, theta = 0.0;
 
     std::deque<geometry_msgs::PoseStamped> path_points;
@@ -28,7 +28,7 @@ public:
         rc_pub = nh.advertise<geometry_msgs::Twist>("/rc_ctrl", 10);
         odom_pub = nh.advertise<nav_msgs::Odometry>("/fake_odom", 10);
         path_pub = nh.advertise<nav_msgs::Path>("/fake_path", 10);
-        timer_pub = nh.createTimer(ros::Duration(0.2), &FakeRcPub::pub_control, this);
+        timer_pub = nh.createTimer(ros::Duration(0.02), &FakeRcPub::pub_control, this);
         path_msg.header.frame_id = "odom";
     }
 
