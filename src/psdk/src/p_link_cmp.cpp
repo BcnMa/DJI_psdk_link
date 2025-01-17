@@ -32,11 +32,27 @@ int p_link_cmp::p_link_cmp_init(int (*recv)(uint8_t *data, uint16_t length), int
     recv_data = recv; //接收数据回调函数
     send_data = send; //发送回调函数
 
-    msg_fun_register(P_LINK_UAV_DATA_MSG_ID,std::bind([this](uint8_t *buf){dataAnalysis(p_link_uav_data,buf); uav_data_update_flag++; },std::placeholders::_1)); //无人机数据解析注册
-    msg_fun_register(P_LINK_UAV_CTRL_MSG_ID,std::bind([this](uint8_t *buf){dataAnalysis(UavCtrCmd,buf);},std::placeholders::_1)); //无人机控制数据解析注册
-    msg_fun_register(P_LINK_GPS_TRACK_MSG_ID,std::bind([this](uint8_t *buf){dataAnalysis(p_link_gps_track,buf);},std::placeholders::_1)); //
-    msg_fun_register(P_LINK_CAMERA_TRACK_MSG_ID,std::bind([this](uint8_t *buf){dataAnalysis(p_link_camer_track,buf);camer_track_update_flag++;},std::placeholders::_1)); //
+    msg_fun_register(P_LINK_UAV_DATA_MSG_ID, std::bind([this](uint8_t *buf) {
+        // std::cout << "Received message with ID: " << P_LINK_UAV_DATA_MSG_ID << std::endl;
+        dataAnalysis(p_link_uav_data, buf); 
+        uav_data_update_flag++; 
+    }, std::placeholders::_1)); // 无人机数据解析注册
 
+    msg_fun_register(P_LINK_UAV_CTRL_MSG_ID, std::bind([this](uint8_t *buf) {
+        // std::cout << "Received message with ID: " << P_LINK_UAV_CTRL_MSG_ID << std::endl;
+        dataAnalysis(UavCtrCmd, buf);
+    }, std::placeholders::_1)); // 无人机控制数据解析注册
+
+    msg_fun_register(P_LINK_GPS_TRACK_MSG_ID, std::bind([this](uint8_t *buf) {
+        // std::cout << "Received message with ID: " << P_LINK_GPS_TRACK_MSG_ID << std::endl;
+        dataAnalysis(p_link_gps_track, buf);
+    }, std::placeholders::_1)); // GPS 跟踪数据解析注册
+
+    msg_fun_register(P_LINK_CAMERA_TRACK_MSG_ID, std::bind([this](uint8_t *buf) {
+        // std::cout << "Received message with ID: " << P_LINK_CAMERA_TRACK_MSG_ID << std::endl;
+        dataAnalysis(p_link_camer_track, buf);
+        camer_track_update_flag++;
+    }, std::placeholders::_1)); // 相机跟踪数据解析注册
     //msg_fun_register(P_LINK_UAV_DATA_MSG_ID,[this](uint8_t *buf){dataAnalysis(p_link_uav_data,buf); uav_data_update_flag++; }); //无人机数据解析注册
     //msg_fun_register(P_LINK_UAV_CTRL_MSG_ID,[this](uint8_t *buf){dataAnalysis(UavCtrCmd,buf);}); //无人机控制数据解析注册
     //msg_fun_register(P_LINK_GPS_TRACK_MSG_ID,[this](uint8_t *buf){dataAnalysis(p_link_gps_track,buf);}); //
@@ -57,11 +73,10 @@ void p_link_cmp::run()
 {
     uint8_t buf[300];
     int ret = recv_data(buf,300);
-    
     if(ret > 0)
     {
-        //printHexArray(buf, ret);
-        //std::cout<<"read len:"<<ret<<std::endl;
+        // printHexArray(buf, ret);
+        // std::cout<<"read len:"<<ret<<std::endl;
         unpack(buf,ret);
     }
 }

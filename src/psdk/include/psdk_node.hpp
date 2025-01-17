@@ -5,11 +5,13 @@
 # include "sensor_msgs/Imu.h"
 # include "psdk_msgs/DroneState.h"
 
+
 # include "iostream"
 # include "mutex"
 # include "thread"
 # include "signal.h"
 # include "p_link_cmp.h"
+# include "udp_comm.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -44,7 +46,7 @@ enum DroneState {
 class Psdk {
 private:
 
-    bool debug_mode;
+    bool debug_mode, use_uart, use_udp;
     bool has_launched = false;
     bool has_landed = false;
     bool has_backed = false;
@@ -54,6 +56,7 @@ private:
     E_DjiHalUartNum uart_port;
     T_p_link_uav_data uav_data = {0};
     T_p_link_camer_track camer_track_data = {0};
+    static udp_comm udp_client; // udp 服务器地址,第三参数1代表客户端
     DroneState drone_state = DroneState::IDLE;
 
     ros::Publisher drone_pose_pub; 
@@ -78,6 +81,8 @@ public:
     int uart_init();
     static int uart_send(uint8_t *data, uint16_t length);
     static int uart_recv(uint8_t *data, uint16_t length);
+    static int udp_send(uint8_t *data, uint16_t length);
+    static int udp_recv(uint8_t *data, uint16_t length);
 
     void run_ros();
     void run_only_pc();
@@ -93,8 +98,10 @@ Psdk::Psdk() {
     drone_follow_sub = nh.subscribe("/pose_follow", 10, &Psdk::drone_follow_callback, this);
     drone_state_sub = nh.subscribe("/drone_state", 10, &Psdk::drone_state_callback, this);
     timer_drone_ctrl = nh.createTimer(ros::Duration(0.1), &Psdk::drone_ctrl_timer_callback, this);
-    nh_private.param<int>("port_num", port_num, 0);
-    nh_private.param<bool>("debug_mode", debug_mode, false);
+    nh.param<int>("port_num", port_num, 0);
+    nh.param<bool>("debug_mode", debug_mode, false);
+    nh.param<bool>("use_uart", use_uart, true);
+    nh.param<bool>("use_udp", use_udp, true);
 }
 
 void Psdk::pub_pose() {
@@ -228,18 +235,26 @@ int Psdk::uart_init() {
     }
     std::cout << "uart_port: " << uart_port << std::endl;
 
-    // 57600
-    if (0 != HalUart_Init(uart_port, 115200, &p_link_uartHandle)) {
-        std::cout << "uart open error" << std::endl;
+    // uart 57600
+    if (use_uart) {
+        if (0 != HalUart_Init(uart_port, 57600, &p_link_uartHandle)) {
+            std::cout << "uart open error" << std::endl;
+        }
+        link_cmp.p_link_cmp_init(uart_recv, uart_send);
     }
-    link_cmp.p_link_cmp_init(uart_recv, uart_send);
 
-    if (debug_mode) {
-        std::cout << GREEN << "ros param:" << YELLOW << std::endl
-                    << "    port_num: " << port_num << std::endl
-                    << "    debug_mode: " << debug_mode << RESET 
-                    << std::endl;
+    // udp
+    if (use_udp) {
+        udp_client.start();
+        link_cmp.p_link_cmp_init(udp_recv, udp_send);
     }
+
+    std::cout << GREEN << "ros param:" << YELLOW << std::endl
+                << "    port_num: " << port_num << std::endl
+                << "    debug_mode: " << debug_mode << std::endl  
+                << "    use_uart: " << use_uart << std::endl 
+                << "    use_udp: " << use_udp << RESET 
+                << std::endl;
     return 0;
 }
 
@@ -262,6 +277,24 @@ int Psdk::uart_recv(uint8_t *data, uint16_t length) {
     HalUart_ReadData(p_link_uartHandle, data, length, &realLen);
 
     return realLen;
+}
+
+int Psdk::udp_send(uint8_t *data, uint16_t length)
+{
+    if (nullptr == data)
+    {
+        return -1;
+    }
+    return udp_client.send_data(data, length);
+}
+
+int Psdk::udp_recv(uint8_t *data, uint16_t length)
+{
+    if (nullptr == data)
+    {
+        return -1;
+    }
+    return udp_client.recv_data(data, length);
 }
 
 void Psdk::run_ros() {

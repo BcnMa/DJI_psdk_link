@@ -3,6 +3,7 @@
 
 p_link::p_link(/* args */)
 {
+    link_buf.state = 0;
     seq = 0;
 }
 
@@ -91,7 +92,7 @@ int p_link::unpack(uint8_t *data, uint8_t length)
                 link_buf.data[0] = P_LINK_HEAD;
                 link_buf.read_index++;
                 link_buf.state = 1;
-                //std::cout << "setp 1" << std::endl;
+                // std::cout << "setp 1" << std::endl;
             }
             break;
 
@@ -99,16 +100,16 @@ int p_link::unpack(uint8_t *data, uint8_t length)
             link_buf.data[link_buf.read_index++] = data[i];
             link_buf.pack_length = data[i] + 5;
             link_buf.state = 2;
-            //std::cout<<"setp 2"<<std::endl;
+            // std::cout<<"setp 2"<<std::endl;
             break;
         case 2:
             link_buf.data[link_buf.read_index++] = data[i];
             if (link_buf.read_index >= link_buf.pack_length)
             {
-                //std::cout<<"setp 3"<<std::endl;
+                // std::cout<<"setp 3"<<std::endl;
                 // 数据解析处理
                 // rs_link_msg_process(link_buf.data, link_buf.pack_length);
-                //std::cout<<data[0]<<std::endl;
+                // std::cout<<data[0]<<std::endl;
                 auto it = msg_cb_fun_map.find(link_buf.data[P_LINK_MSG_ID_INDEX]); // 查找键为2的元素
                 if (it != msg_cb_fun_map.end())
                 {

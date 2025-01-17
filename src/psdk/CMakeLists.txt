@@ -23,7 +23,7 @@ catkin_package(
 )
 
 
-add_library(psdk_library src/hal_uart.c src/p_link.cpp src/p_link_cmp.cpp)
+add_library(psdk_library src/hal_uart.c src/p_link.cpp src/p_link_cmp.cpp src/udp_comm.cpp)
 target_link_libraries(psdk_library ${catkin_LIBRARIES})
 
 add_executable(psdk_node src/psdk_node.cpp)

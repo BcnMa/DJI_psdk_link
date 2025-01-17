@@ -244,7 +244,6 @@ int HalUart_ReadData(T_DjiUartHandle uartHandle, uint8_t *buf, uint32_t len, uin
     } else {
         return -1;
     }
-
     return 0;
 }
 

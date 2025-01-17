@@ -1,11 +1,10 @@
 <launch>
-    <arg name="debug_mode" value="true" />
-    <arg name="ctrl_mode" value="1" />
-    <arg name="port_num" value="0" />
+    <param name="debug_mode" value="true" />
+    <param name="use_uart" value="true" />
+    <param name="use_udp" value="false" />
+    <param name="ctrl_mode" value="1" />
+    <param name="port_num" value="0" />
 
     <node pkg="psdk" type="psdk_node" name="psdk_node" output="screen">
-        <param name="debug_mode" value="$(arg debug_mode)" />
-        <param name="ctrl_mode" value="$(arg ctrl_mode)" />
-        <param name="port_num" value="$(arg port_num)" />
     </node>
 </launch>
