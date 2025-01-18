@@ -1,6 +1,6 @@
 # include "ros/ros.h"
 # include "geometry_msgs/Twist.h"
-# include "geometry_msgs/Pose.h"
+# include "geometry_msgs/PoseStamped.h"
 # include "sensor_msgs/NavSatFix.h"
 # include "sensor_msgs/Imu.h"
 # include "psdk_msgs/DroneState.h"
@@ -92,7 +92,7 @@ public:
 Psdk::Psdk() {
     ros::NodeHandle nh;
     ros::NodeHandle nh_private("~");
-    drone_pose_pub = nh.advertise<sensor_msgs::NavSatFix>("/uav_pose", 100000);
+    drone_pose_pub = nh.advertise<geometry_msgs::PoseStamped>("/uav_gps_pose", 100000);
     drone_imu_pub = nh.advertise<sensor_msgs::Imu>("/uav_imu", 100000);
     drone_ctrl_sub = nh.subscribe("/rc_ctrl", 10, &Psdk::drone_ctrl_callback, this);
     drone_follow_sub = nh.subscribe("/pose_follow", 10, &Psdk::drone_follow_callback, this);
@@ -105,25 +105,28 @@ Psdk::Psdk() {
 }
 
 void Psdk::pub_pose() {
-    sensor_msgs::NavSatFix pose_data;
+    geometry_msgs::PoseStamped pose_data;
     if (0 == link_cmp.uav_data_get(&uav_data)) {
         pose_data.header.stamp = ros::Time::now();
         pose_data.header.frame_id = "uav";
-
-        pose_data.longitude = uav_data.x / 10000000.0;
-        pose_data.latitude = uav_data.y / 10000000.0;
-        pose_data.altitude = uav_data.z / 1000.0;
+        pose_data.pose.position.x = uav_data.y / 10000000.0; // 纬度
+        pose_data.pose.position.y = uav_data.x / 10000000.0; // 经度
+        pose_data.pose.position.z = uav_data.z / 1000.0;     
+        pose_data.pose.orientation.x = uav_data.q1;
+        pose_data.pose.orientation.y = uav_data.q2;
+        pose_data.pose.orientation.z = uav_data.q3;
+        pose_data.pose.orientation.w = uav_data.q0;
 
         drone_pose_pub.publish(pose_data);
         if (debug_mode) 
             std::cout << CYAN << std::endl << "The Drone send state:" << RED << " Position " << YELLOW << std::endl
-                    << "    x: " << std::fixed << std::setprecision(6) << pose_data.longitude << ", " << std::endl
-                    << "    y: " << std::fixed << std::setprecision(6) << pose_data.latitude << ", " << std::endl
-                    << "    z: " << std::fixed << std::setprecision(6) << pose_data.altitude << ", " << std::endl
-                    << "    q0: " << std::fixed << std::setprecision(6) << uav_data.q0 << ", " << std::endl 
-                    << "    q1: " << std::fixed << std::setprecision(6) << uav_data.q1 << ", " << std::endl
-                    << "    q2: " << std::fixed << std::setprecision(6) << uav_data.q2 << ", " << std::endl 
-                    << "    q3: " << std::fixed << std::setprecision(6) << uav_data.q3 
+                    << "    x: " << std::fixed << std::setprecision(6) << pose_data.pose.position.x << ", " << std::endl
+                    << "    y: " << std::fixed << std::setprecision(6) << pose_data.pose.position.y << ", " << std::endl
+                    << "    z: " << std::fixed << std::setprecision(6) << pose_data.pose.position.z << ", " << std::endl
+                    << "    q0: " << std::fixed << std::setprecision(6) << pose_data.pose.orientation.x << ", " << std::endl 
+                    << "    q1: " << std::fixed << std::setprecision(6) << pose_data.pose.orientation.y << ", " << std::endl
+                    << "    q2: " << std::fixed << std::setprecision(6) << pose_data.pose.orientation.z << ", " << std::endl 
+                    << "    q3: " << std::fixed << std::setprecision(6) << pose_data.pose.orientation.w 
                     << RESET << std::endl;  
     } 
 }
